@@ -104,8 +104,11 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
   // --------------------------------------------------------------------------
   public static htmlEncode(data: any): string | null {
   // --------------------------------------------------------------------------
-    // TODO !!!
-    const result = data.toString()
+    const result = data.replace("&", "&amp;")
+                       .replace("<", "&lt;")
+                       .replace(">", "&gt;")
+                       .replace('"', "&quot;")
+                       .replace("'", "&#039;")
     return result
   }
 
