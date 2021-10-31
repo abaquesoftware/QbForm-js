@@ -231,7 +231,9 @@ export default class QbfNumber extends QbfInputAbstract {
       html += "></input>"
     } else {
       // Disabled
+      html += "<div style='text-align: left'>"
       html += valueHtml
+      html += "</div>"
     }
     return html
   }
