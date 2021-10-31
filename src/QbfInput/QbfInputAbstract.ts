@@ -460,7 +460,7 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
     if (this.suggestedEnum) {
       let elementIndex = 0
       this.suggestedEnum.forEach( (value: any) => {
-        const valueLowcase = value.toLowerCase()
+        const valueLowcase = value.toString().toLowerCase()
         if ( valueLowcase.indexOf(pattern) >= 0 ) {
           html += "<tr>"
           html += "<td"
