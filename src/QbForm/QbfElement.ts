@@ -118,7 +118,7 @@ export default abstract class QbfElement {
   // --------------------------------------------------------------------------
   public static buildFilterCellHtml(parent: QbfElement, filterId: number, classNames: string): string {
   // --------------------------------------------------------------------------
-    return "<div></div>"
+    return ""
   }
 
   // **************************************

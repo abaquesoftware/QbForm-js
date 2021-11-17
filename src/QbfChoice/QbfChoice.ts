@@ -59,7 +59,7 @@ export default class KChoice extends QbfFramedElement {
       }
     }
     let html = ""
-    html += "<div id=\"" + path + "\" >"
+    html += "<div id=\"" + path + "\" class=\"" + cellClassNames + "\">"
     html += "<select id=\"" + path + "_SELECT\" "
     html += " tabindex=0"
     html += " onchange=\"QbForm.getClass('QbfChoice').onFilterChange(" + filterElementId + ",event)\""
