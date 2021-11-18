@@ -10,8 +10,13 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
   // QbfInputAbstract: static
   // **************************************
   public static textAreaForHtmlEncodingID: string = "__QbfToolEncodingArea"
+  // List
   public static listDiv: HTMLDivElement | null = null
   public static listElement: QbfInputAbstract | null = null
+  public static listTimeHandler: NodeJS.Timeout | null = null
+  public static listPosX: number = -1
+  public static listPosY: number = -1
+  //
   public static overListValue: boolean = false
   public static lastBlurEvent: Event | null = null
   // Property name prefixes
@@ -129,7 +134,7 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
         // const qbForm = QbForm.qbFormMap.get(qbFormId)
         if (element.suggestedEnum) {
           element.listDisplayed = true
-          element.updateListDisplay()
+          QbfInputAbstract.updateListDisplay(element)
         }
       }
       element.focusWithNoList = false
@@ -162,7 +167,7 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
             element.listDisplayed = false
             const focus = false
             QbfFramedElement.setElementFocus(elementPath, targetIdSuffix, focus)
-            element.updateListDisplay()
+            QbfInputAbstract.updateListDisplay(element)
         }
         element.noBlur = false
       }
@@ -232,7 +237,7 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
       element.listDisplayed = !element.listDisplayed
       element.focusWithNoList = true
       element.noBlur = true
-      element.updateListDisplay()
+      QbfInputAbstract.updateListDisplay(element)
       inputHtml.focus()
     }
   }
@@ -251,10 +256,65 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
       element.setProperty("value", value)
 
       element.listDisplayed = false
-      element.updateListDisplay()
+      QbfInputAbstract.updateListDisplay(element)
       element.focusWithNoList = true
       inputCenterHtml.focus()
       element.noBlur = true
+    }
+  }
+
+  // ------------------------------------------------------------------------------
+  public static updateListDisplay(element: QbfInputAbstract | null): void {
+  // ------------------------------------------------------------------------------
+    // Create listDiv (if needed)
+    if (!QbfInputAbstract.listDiv) {
+      QbfInputAbstract.listDiv = document.createElement("div")
+      document.body.appendChild(QbfInputAbstract.listDiv)
+      QbfInputAbstract.listDiv.style.visibility = "hidden"
+      QbfInputAbstract.listDiv.style.position = "absolute"
+    }
+    const listDiv = QbfInputAbstract.listDiv
+    if ( element && element.listDisplayed ) {
+      // - - - - - - - - - - - - -
+      // Case 1: DISPLAY ON
+      // - - - - - - - - - - - - -
+      if (listDiv) {
+        element.updateListPosition(true)
+        const path = QbForm.convertPathToString(element.elementPath)
+        const inputCenterHtml = QbForm.getElementById(path + "_INPUTCENTER") as HTMLInputElement
+        let pattern = ""
+        if ( inputCenterHtml ) {
+          pattern = inputCenterHtml.value.toLowerCase()
+        }
+        const html = element.buildListHtml(pattern)
+        listDiv.innerHTML = html
+        listDiv.style.visibility = "visible"
+        QbfInputAbstract.listElement = element
+        if (QbfInputAbstract.listTimeHandler) {
+          clearInterval(QbfInputAbstract.listTimeHandler)
+        }
+        QbfInputAbstract.listTimeHandler = setInterval(QbfInputAbstract.checkListPosition, 100)
+      }
+    } else {
+      // - - - - - - - - - - - - -
+      // Case 2: DISPLAY OFF
+      // - - - - - - - - - - - - -
+      listDiv.style.visibility = "hidden"
+      QbfInputAbstract.overListValue = false
+      if (QbfInputAbstract.listTimeHandler) {
+        clearInterval(QbfInputAbstract.listTimeHandler)
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------
+  private static checkListPosition(): void {
+  // ------------------------------------------------------------------------------
+    if (QbfInputAbstract.listElement) {
+      QbfInputAbstract.listElement.updateListPosition(false)
+    } else {
+      // Error ! ListElement doesn't exists ! -> stop timer
+      QbfInputAbstract.updateListDisplay(null)
     }
   }
 
@@ -401,56 +461,6 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
   }
 
   // ------------------------------------------------------------------------------
-  public updateListDisplay(): void {
-  // ------------------------------------------------------------------------------
-    // Create listDiv (if needed)
-    if (!QbfInputAbstract.listDiv) {
-      QbfInputAbstract.listDiv = document.createElement("div")
-      document.body.appendChild(QbfInputAbstract.listDiv)
-      QbfInputAbstract.listDiv.style.visibility = "hidden"
-      QbfInputAbstract.listDiv.style.position = "absolute"
-    }
-    const listDiv = QbfInputAbstract.listDiv
-    if ( this.listDisplayed ) {
-      // - - - - - - - - - - - - -
-      // Case 1: DISPLAY ON
-      // - - - - - - - - - - - - -
-      const path = QbForm.convertPathToString(this.elementPath)
-      const inputPath = path + "_INPUT"
-      const inputHtml = QbForm.getElementById(inputPath) as HTMLDivElement
-      if (listDiv && inputHtml) {
-        const rect = inputHtml.getBoundingClientRect()
-        const xPos = rect.x + window.scrollX - 2
-        const yPos = rect.y + rect.height + window.scrollY + 2
-        const width = rect.width + 100
-        listDiv.className = "_qbf-" + this.theme + "_input_list"
-        listDiv.style.left = "" + xPos + "px"
-        listDiv.style.top = "" + yPos + "px"
-        listDiv.style.width = "" + width + "px"
-        let pattern = ""
-        const inputCenterHtml = QbForm.getElementById(path + "_INPUTCENTER") as HTMLInputElement
-        if ( inputCenterHtml ) {
-          pattern = inputCenterHtml.value
-        }
-        const html = this.buildListHtml(inputCenterHtml.value)
-        listDiv.innerHTML = html
-        listDiv.style.visibility = "visible"
-        QbfInputAbstract.listElement = this
-      }
-    } else {
-      // - - - - - - - - - - - - -
-      // Case 2: DISPLAY OFF
-      // - - - - - - - - - - - - -
-      if ( QbfInputAbstract.listElement === this ) {
-        listDiv.style.visibility = "hidden"
-        QbfInputAbstract.listElement = this
-        QbfInputAbstract.overListValue = false
-      }
-      QbfInputAbstract.overListValue = false
-    }
-  }
-
-  // ------------------------------------------------------------------------------
   public buildListHtml(pattern: string): string {
   // ------------------------------------------------------------------------------
     // const qbFormId = this.qbForm.index
@@ -474,4 +484,28 @@ export default abstract class QbfInputAbstract extends QbfFramedElement {
     html += "</table>"
     return html
   }
+
+  // ------------------------------------------------------------------------------
+  private updateListPosition(force: boolean): void {
+  // ------------------------------------------------------------------------------
+    const path = QbForm.convertPathToString(this.elementPath)
+    const inputPath = path + "_INPUT"
+    const inputHtml = QbForm.getElementById(inputPath) as HTMLDivElement
+    const listDiv = QbfInputAbstract.listDiv
+    if (listDiv && inputHtml) {
+      const rect = inputHtml.getBoundingClientRect()
+      const xPos = rect.x + window.scrollX - 2
+      const yPos = rect.y + rect.height + window.scrollY + 2
+      if ( force || xPos !== QbfInputAbstract.listPosX || yPos !== QbfInputAbstract.listPosY ) {
+        const width = rect.width + 100
+        listDiv.className = "_qbf-" + this.theme + "_input_list"
+        listDiv.style.left = "" + xPos + "px"
+        listDiv.style.top = "" + yPos + "px"
+        listDiv.style.width = "" + width + "px"
+        QbfInputAbstract.listPosX = xPos
+        QbfInputAbstract.listPosY = yPos
+      }
+    }
+  }
+
 }
